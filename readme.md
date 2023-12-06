@@ -5,82 +5,97 @@
 
 Module developed to standardize the creation of cluster role bindings in K8S environments.
 
-## Dependency
-
-This module depends on the module [https://dev.azure.com/timbrasil/Projeto_IaC/_git/k8s-module-clusterrole](https://dev.azure.com/timbrasil/Projeto_IaC/_git/k8s-module-clusterrole). 
-
-The cluster role binding will point to the cluster role created by the module reffered above.
-
 ## Compatibility matrix
 
 | Module Version | Terraform Version | Kubernetes Provider Version |
 |----------------|-------------------| --------------------------- |
-| v1.0.0         | v1.3.6            | 2.17.0                      |
+| v1.0.0         | v1.6.4            | 2.23.0                      |
 
 ## Specifying a version
 
-To avoid that your code get automatically updates for the module is mandatory to set the version using the `source` option. 
-By defining the `?ref=***` in the the URL, you can use a specific version of the module.
-
+To avoid that your code get the latest module version, you can define the `?ref=***` in the URL to point to a specific version.
 Note: The `?ref=***` refers a tag on the git module repo.
 
-## Use case for the creation of a cluster role binding for the standard cluster role.
+## Use case for the creation of a cluster role binding for the **standard clusterrole.
+
+The standard cluster role is created using the module [https://github.com/danilomnds/terraform-kubernetes-clusterrole](https://github.com/danilomnds/terraform-kubernetes-clusterrole)
 
 ```hcl
 module "<clustername>-clusterrolebinding" {  
-  source = "git::https://github.com/danilomnds/terraform-kubernetes-clusterrolebinding?ref=v1.0.0"  
-  subjects = {    
-    <group name> = {
-      name =  "<group object id>"
-      kind = "Group"
-      api_group = "rbac.authorization.k8s.io"
+  source = "git::https://github.com/danilomnds/terraform-kubernetes-clusterrolebinding?ref=v2.0.0"
+  subject = [{    
+    name =  "<group object id>"
+    kind = "Group"
+    api_group = "rbac.authorization.k8s.io"
+    },
+    {
+    name =  "<spn object id>"
+    kind = "User"
+    api_group = "rbac.authorization.k8s.io"
+    },
+    {
+    name =  "<service account id>"
+    kind = "ServiceAccount"
+    namespace = "<namespace name>"
     }
-    <SPN name> = {
-      name =  "<spn object id>"
-      kind = "User"
-      api_group = "rbac.authorization.k8s.io"
-    }
-    <service account name> = {
-      name =  "<service account id>"
-      kind = "ServiceAccount"
-      namespace = "<namespace name>
-    }
-  }
+  ]
 }
 ```
 ## Use case for the creation of a cluster role binding for a customized cluster role.
 
 ```hcl
 module "<clustername>-clusterrolebinding" {  
-  source = "git::https://github.com/danilomnds/terraform-kubernetes-clusterrolebinding?ref=v1.0.0"  
-  clusterrolename="<cluster role name>"
-  clusterrolebinding = "<cluster role binding name>"
-  subjects = {    
-    <group name> = {
-      name =  "<group id>"
-      kind = "Group"
-      api_group = "rbac.authorization.k8s.io"
-    }
-    SPN = {
-      name =  "<spn id>"
-      kind = "User"
-      api_group = "rbac.authorization.k8s.io"
-    }
-    <service account name> = {
-      name =  "<id of service account>"
-      kind = "ServiceAccount"
-      namespace = "<namespace name>
-    }
+  source = "git::https://github.com/danilomnds/terraform-kubernetes-clusterrolebinding?ref=v2.0.0"
+  metadata = {
+    name = <clusterrolebinding-name>
   }
+  role_ref = {
+    name      = "custom-cluster-role-name"
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+  }
+  subject = [{    
+    name =  "<group object id>"
+    kind = "Group"
+    api_group = "rbac.authorization.k8s.io"
+    },
+    {
+    name =  "<spn object id>"
+    kind = "User"
+    api_group = "rbac.authorization.k8s.io"
+    },
+    {
+    name =  "<service account id>"
+    kind = "ServiceAccount"
+    namespace = "<namespace name>"
+    }
+  ]
 }
 ```
+
 ## Input Variables
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| clusterrolename | cluster role nome used to create the cluster role binding| `string` | `clusterrole-custom-tim` | No |
-| clusterrolebinding | custom cluster role binding name | `string` | `clusterrolebinding-custom-tim` | No |
-| subjects | user, groups or service accounts that will be associated to the role | `any` | n/a | `Yes` |
+| metadata | a block as defined below | `object({})` | n/a | No |
+| role_ref | a block as defined below | `list(object({}))` | n/a | No |
+| subject | a block as defined below | `object({})` | n/a | No |
+
+# Object variables for blocks
+
+| Variable Name (Block) | Parameter | Description | Type | Default | Required |
+|-----------------------|-----------|-------------|------|---------|:--------:|
+| metadata | annotations | an unstructured key value map stored with the cluster role binding that may be used to store arbitrary metadata | `map(string)` | `null` | No |
+| metadata | generate_name | prefix, used by the server, to generate a unique name only if the name field has not been provided | `string` | `null` | No |
+| metadata | labels | map of string keys and values that can be used to organize and categorize (scope and select) the cluster role binding | `map(string)` | `null` | No |
+| metadata | name | cluster role name | `string` | `readerclusterrolebinding` | No |
+| role_ref | name | the name of this clusterrole to bind subjects to | `string` | `readerclusterrole` | `Yes` |
+| role_ref | api_group | the api group to drive authorization decisions | `string` | `rbac.authorization.k8s.io` | `Yes` |
+| role_ref | kind | the type of binding to use | `string` | `ClusterRole` | `Yes` |
+| subject | name | the name of this clusterrole to bind subjects to | `string` | n/a | `Yes` |
+| subject | namespace | namespace defines the namespace of the serviceaccount to bind to | `string` | n/a | No |
+| subject | kind | the type of binding to use | `string` | n/a | `Yes` |
+| subject | api_group | the api group to drive authorization decisions | `string` | n/a | `Yes` |
 
 ## Documentation
 
